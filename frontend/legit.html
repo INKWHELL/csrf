@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Trusted Frontend</title>
+</head>
+<body>
+  <h1>Trusted Frontend (localhost:5501)</h1>
+  <button id="loginBtn">Log in as joe</button>
+  <br><br>
+  <input id="emailInput" type="text" value="joe-updated@example.com">
+  <button id="changeEmailBtn">Change email (legitimate request)</button>
+  <pre id="output"></pre>
+
+  <script>
+    const output = document.getElementById('output');
+
+    document.getElementById('loginBtn').onclick = async () => {
+      const res = await fetch('http://localhost:7999/api/login/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'joe', password: 'testpass123' })
+      });
+      output.textContent = JSON.stringify(await res.json(), null, 2);
+    };
+
+    async function getCsrfToken() {
+      const res = await fetch('http://localhost:7999/api/csrf/', {
+        credentials: 'include'
+      });
+      const data = await res.json();
+      return data.csrfToken;
+    }
+
+    document.getElementById('changeEmailBtn').onclick = async () => {
+      const token = await getCsrfToken();
+      const email = document.getElementById('emailInput').value;
+
+      const res = await fetch('http://localhost:7999/api/account/email/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': token
+        },
+        body: new URLSearchParams({ email })
+      });
+      const data = await res.json();
+      output.textContent = JSON.stringify(data, null, 2);
+    };
+  </script>
+</body>
+</html>
